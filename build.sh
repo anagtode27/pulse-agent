@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Safety flags in case the script errors out
+set -euo pipefail
+
+# Change to the directory of the script
+cd "$(dirname "$0")"
+
+# Check for either python3 or python in the PATH
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON=python3
+elif command -v python >/dev/null 2>&1; then
+  PYTHON=python
+else
+  echo "Python 3 not found. Install Python first." >&2
+  exit 1
+fi
+
+# Create a fresh virtual environment if python exists
+echo "Creating virtual environment..."
+rm -rf venv
+$PYTHON -m venv venv
+source venv/bin/activate
+
+# Install dependencies into the venv
+echo "Installing dependencies..."
+pip install -r requirements.txt
+
+# Build the executable
+echo "Building pulse-agent..."
+$PYTHON -m PyInstaller --onefile agent.py --name exe
+echo "As per the above line, the executable is at dist/exe"

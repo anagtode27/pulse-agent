@@ -30,7 +30,7 @@ def disk_usage_root() -> str:
         return os.environ.get("SystemDrive", "C:") + os.sep
     return "/"
 
-
+# Main function to collect metrics -> returns a dict with all the metric details
 def collect_metrics(prev_net: NetSample | None) -> tuple[dict[str, float], NetSample]:
     virtual_memory = psutil.virtual_memory()
     disk_usage = psutil.disk_usage(disk_usage_root())
@@ -80,29 +80,46 @@ def transmit(server_url: str, payload: dict[str, Any]) -> tuple[str, float]:
 
 # Main driver function
 def main() -> None:
+
+    # Set up logging and create a log object
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     log = logging.getLogger("pulse")
+    interval_sec = float(PULSE_INTERVAL)
+
+    # Check if cli argument is appropriate
+    if len(sys.argv) > 1:
+        try:
+            interval_sec = float(int(sys.argv[1]))
+        except ValueError:
+            log.error("interval must be an integer (seconds), got %r", sys.argv[1])
+            raise SystemExit(2)
+
+        # Check if int is positive
+        if interval_sec <= 0:
+            log.error("interval must be > 0")
+            raise SystemExit(2)
 
     hostname = socket.gethostname()
     server_url = PULSE_URL
-    interval = PULSE_INTERVAL
     username = PULSE_USER
 
+    # Initial log message
     log.info(
-        "started host=%s user=%s url=%s interval=%ss",
+        "Logged user=%s@host=%s url=%s interval=%ss",
         hostname,
         username,
         server_url,
-        interval,
+        interval_sec,
     )
 
     prev_net: NetSample | None = None
     psutil.cpu_percent(interval=None)
 
+    # Driving while loop
     try:
         while True:
             metrics, prev_net = collect_metrics(prev_net)
@@ -110,10 +127,10 @@ def main() -> None:
             status, elapsed_ms = transmit(server_url, payload)
 
             log.info(
-                "host=%s user=%s report %s %.2fms | cpu=%.1f%% mem=%.1f%% mem_used=%.0fMB "
+                "Reported from %s@=%s %s Took %.2fms to write to DB. | cpu=%.1f%% mem=%.1f%% mem_used=%.0fMB "
                 "disk=%.1f%% net_sent=%.2fMB net_recv=%.2fMB",
-                hostname,
                 username,
+                hostname,
                 status,
                 elapsed_ms,
                 metrics["cpu_percent"],
@@ -123,9 +140,14 @@ def main() -> None:
                 metrics["net_sent_mb"],
                 metrics["net_recv_mb"],
             )
-            time.sleep(interval)
+            time.sleep(interval_sec)
     except KeyboardInterrupt:
-        log.info("stopped")
+        # A second Ctrl+C can arrive while logging; swallow it so PyInstaller
+        # does not report an unhandled exception.
+        try:
+            log.info("Ctrl+C detected - stopped program.")
+        except KeyboardInterrupt:
+            pass
 
 if __name__ == "__main__":
     main()

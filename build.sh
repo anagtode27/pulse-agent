@@ -6,6 +6,10 @@ set -euo pipefail
 # Change to the directory of the script
 cd "$(dirname "$0")"
 
+# Clean all prev. build artifacts
+./clean.sh
+echo "Done."
+
 # Check for either python3 or python in the PATH
 if command -v python3 >/dev/null 2>&1; then
   PYTHON=python3
@@ -21,12 +25,13 @@ echo "Creating virtual environment..."
 rm -rf venv
 $PYTHON -m venv venv
 source venv/bin/activate
+echo "Done."
 
 # Install dependencies into the venv
 echo "Installing dependencies..."
 pip install -r requirements.txt
+echo "Done."
 
 # Build the executable
 echo "Building pulse-agent..."
-$PYTHON -m PyInstaller --onefile agent.py --name exe
-echo "As per the above line, the executable is at dist/exe"
+$PYTHON -m PyInstaller --onefile agent.py --name pulse-agent

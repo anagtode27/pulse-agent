@@ -16,9 +16,8 @@ PULSE_INTERVAL = 2.0
 PULSE_USER = getpass.getuser()
 
 # Represents a piece of network data for a particular time
-# This is because psutil.net_io_counters() returns the total amount of bytes since machine booted
-# Always increasing, no reset. 
-# So we need to some quick subtraction to get the network sample at that time 
+# This is because psutil.net_io_counters() returns the total amount of bytes since machine booted 
+# Always increasing, no reset. So we need to some quick subtraction to get the network sample at that time 
 @dataclass
 class NetSample:
     bytes_sent: int
@@ -60,7 +59,6 @@ def collect_metrics(prev_net: NetSample | None) -> tuple[dict[str, float], NetSa
     # Return the assembled metric, and also the current net sample for next time
     return metrics, current_net
 
-
 # Returns a simple json based on arguments
 def build_payload(hostname: str, username: str, metrics: dict[str, float]) -> dict[str, Any]:
     ts_ms = int(time.time() * 1000)
@@ -84,70 +82,67 @@ def main() -> None:
     # Set up logging and create a log object
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(message)s",
+        format="%(asctime)s %(levelname)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     log = logging.getLogger("pulse")
-    interval_sec = float(PULSE_INTERVAL)
+
 
     # Check if cli argument is appropriate
+    interval_sec = float(PULSE_INTERVAL)
     if len(sys.argv) > 1:
         try:
             interval_sec = float(int(sys.argv[1]))
         except ValueError:
             log.error("interval must be an integer (seconds), got %r", sys.argv[1])
             raise SystemExit(2)
-
         # Check if int is positive
         if interval_sec <= 0:
             log.error("interval must be > 0")
             raise SystemExit(2)
 
+    # Initial log message
     hostname = socket.gethostname()
     server_url = PULSE_URL
     username = PULSE_USER
-
-    # Initial log message
     log.info(
-        "Logged user=%s@host=%s url=%s interval=%ss",
-        hostname,
+        "Logged in as %s@%s, writing to [db link] and POSTing to %s, every %ss", # Add DB url here?
         username,
+        hostname,
         server_url,
         interval_sec,
     )
-
     prev_net: NetSample | None = None
     psutil.cpu_percent(interval=None)
 
     # Driving while loop
-    try:
-        while True:
-            metrics, prev_net = collect_metrics(prev_net)
-            payload = build_payload(hostname, username, metrics)
-            status, elapsed_ms = transmit(server_url, payload)
+    while True:
+        metrics, prev_net = collect_metrics(prev_net)
+        payload = build_payload(hostname, username, metrics)
+        status, elapsed_ms = transmit(server_url, payload)
+        # NOT USING STATUS Rn
 
-            log.info(
-                "Reported from %s@=%s %s Took %.2fms to write to DB. | cpu=%.1f%% mem=%.1f%% mem_used=%.0fMB "
-                "disk=%.1f%% net_sent=%.2fMB net_recv=%.2fMB",
-                username,
-                hostname,
-                status,
-                elapsed_ms,
-                metrics["cpu_percent"],
-                metrics["memory_percent"],
-                metrics["memory_used_mb"],
-                metrics["disk_percent"],
-                metrics["net_sent_mb"],
-                metrics["net_recv_mb"],
-            )
-            time.sleep(interval_sec)
-    except KeyboardInterrupt:
-        # A second Ctrl+C can arrive while logging; swallow it so PyInstaller
-        # does not report an unhandled exception.
-        try:
-            log.info("Ctrl+C detected - stopped program.")
-        except KeyboardInterrupt:
-            pass
+        # Big log message
+        log.info(
+            "%s@%s - %.2fms write to DB. | cpu=%.1f%% mem=%.1f%% mem_used=%.0fMB "
+            "disk=%.1f%% net_sent=%.2fMB net_recv=%.2fMB",
+            username,
+            hostname,
+            elapsed_ms,
+            metrics["cpu_percent"],
+            metrics["memory_percent"],
+            metrics["memory_used_mb"],
+            metrics["disk_percent"],
+            metrics["net_sent_mb"],
+            metrics["net_recv_mb"],
+        )
+        time.sleep(interval_sec)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt: # Super jank Ctrl C logic - I don't know how this works
+        try:
+            print("")
+        except KeyboardInterrupt:
+            pass

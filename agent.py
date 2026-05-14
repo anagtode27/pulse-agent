@@ -106,7 +106,7 @@ def main() -> None:
     server_url = PULSE_URL
     username = PULSE_USER
     log.info(
-        "Logged in as %s@%s, writing to [db link] and POSTing to %s, every %ss", # Add DB url here?
+        "Logged in as %s@%s, POST to %s, every %ss", # Add DB url here?
         username,
         hostname,
         server_url,
@@ -124,8 +124,7 @@ def main() -> None:
 
         # Big log message
         log.info(
-            "%s@%s - %.2fms write to DB. | cpu=%.1f%% mem=%.1f%% mem_used=%.0fMB "
-            "disk=%.1f%% net_sent=%.2fMB net_recv=%.2fMB",
+            "%s@%s - %.2fms POST | cpu=%.1f%% mem=%.1f%% mem_used=%.0fMB disk=%.1f%% net_sent=%.2fMB net_recv=%.2fMB",
             username,
             hostname,
             elapsed_ms,

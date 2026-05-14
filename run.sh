@@ -3,5 +3,5 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 ./build.sh
-echo "Running binary..."
+echo "Executing binary..."
 exec ./dist/pulse-agent "$@"

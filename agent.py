@@ -78,6 +78,7 @@ def transmit(server_url: str, payload: dict[str, Any]) -> tuple[str, float]:
 
 # Main driver function
 def main() -> None:
+    interval_sec = float(PULSE_INTERVAL)
 
     # Set up logging and create a log object
     logging.basicConfig(
@@ -87,26 +88,12 @@ def main() -> None:
     )
     log = logging.getLogger("pulse")
 
-
-    # Check if cli argument is appropriate
-    interval_sec = float(PULSE_INTERVAL)
-    if len(sys.argv) > 1:
-        try:
-            interval_sec = float(int(sys.argv[1]))
-        except ValueError:
-            log.error("interval must be an integer (seconds), got %r", sys.argv[1])
-            raise SystemExit(2)
-        # Check if int is positive
-        if interval_sec <= 0:
-            log.error("interval must be > 0")
-            raise SystemExit(2)
-
     # Initial log message
     hostname = socket.gethostname()
     server_url = PULSE_URL
     username = PULSE_USER
     log.info(
-        "Logged in as %s@%s, POST to %s, every %ss", # Add DB url here?
+        "LOGGING AS %s@%s, POST TO %s, EVERY %ss", 
         username,
         hostname,
         server_url,
@@ -138,10 +125,4 @@ def main() -> None:
         time.sleep(interval_sec)
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt: # Super jank Ctrl C logic - I don't know how this works
-        try:
-            print("")
-        except KeyboardInterrupt:
-            pass
+    main()

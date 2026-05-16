@@ -2,10 +2,10 @@ Lightweight Python telemetry agent that collects system metrics and forwards the
 
 ## Project structure:
 
-- agent.py: Handles all CLI and metric collection
-- build.sh: A script that creates a new venv, installs all dependencies, and uses PyInstaller to produce the binary. The build user needs to have python or python3 installed. End users do not need python to run.
-- clean.sh: A simple script to clean all build artifacts. Called at the start of build.sh.
-- run.sh: A simple script that calls build.sh and executes the binary.
+- agent.py: Handles metric collection and sends that data to the Pulse API
+- build.sh: Creates a new venv, installs all dependencies, and uses PyInstaller to produce the binary.
+- clean.sh: Cleans all build artifacts, called at the beginning of build.sh
+- run.sh: Calls build.sh and executes the binary.
 
 ## Requirements to build the binary:
 
@@ -35,5 +35,3 @@ Lightweight Python telemetry agent that collects system metrics and forwards the
 - Stuff
 
 #### TODO:
-
-- Make run.sh argument acceptance more robust

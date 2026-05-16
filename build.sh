@@ -3,9 +3,6 @@
 # Safety flags in case the script errors out
 set -euo pipefail
 
-# Change to the directory of the script
-cd "$(dirname "$0")"
-
 # Clean all prev. build artifacts
 ./clean.sh
 echo "Done."
